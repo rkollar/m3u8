@@ -526,6 +526,13 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 				return err
 			}
 		}
+		if state.tagDaterange {
+			state.tagDaterange = false
+			if err = p.SetDateranges(state.dateranges); strict && err != nil {
+				return err
+			}
+			state.dateranges = nil
+		}
 		if state.tagDiscontinuity {
 			state.tagDiscontinuity = false
 			if err = p.SetDiscontinuity(); strict && err != nil {
@@ -717,6 +724,67 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 		state.scte = new(SCTE)
 		state.scte.Syntax = SCTE35_OATCLS
 		state.scte.CueType = SCTE35Cue_End
+	case !state.tagDaterange && strings.HasPrefix(line, "#EXT-X-DATERANGE:"):
+		state.tagDaterange = true
+		daterange := NewDaterange()
+		for attribute, value := range decodeParamsLine(line[17:]) {
+			switch attribute {
+			case "ID":
+				daterange.ID = value
+			case "CLASS":
+				v := value
+				daterange.Class = &v
+			case "START-DATE":
+				daterange.StartDate, err = TimeParse(value)
+				if strict && err != nil {
+					return err
+				}
+			case "END-DATE":
+				var endDate time.Time
+				endDate, err = TimeParse(value)
+				if strict && err != nil {
+					return err
+				}
+				daterange.EndDate = &endDate
+			case "DURATION":
+				var f float64
+				f, err = strconv.ParseFloat(value, 64)
+				if strict && err != nil {
+					return err
+				}
+				f *= 1000 // ms
+				d := time.Duration(f) * time.Millisecond
+				daterange.Duration = &d
+			case "PLANNED-DURATION":
+				var f float64
+				f, err = strconv.ParseFloat(value, 64)
+				if strict && err != nil {
+					return err
+				}
+				f *= 1000 // ms
+				d := time.Duration(f) * time.Millisecond
+				daterange.PlannedDuration = &d
+			case "SCTE35-CMD":
+				v := value
+				daterange.SCTE35Command = &v
+			case "SCTE35-OUT":
+				v := value
+				daterange.SCTE35Out = &v
+			case "SCTE35-IN":
+				v := value
+				daterange.SCTE35In = &v
+			case "END-ON-NEXT":
+				if value == "YES" {
+					daterange.EndOnNext = true
+				}
+			default:
+				if strings.HasPrefix(attribute, "X-") {
+					attr := strings.TrimPrefix(attribute, "X-")
+					daterange.X[attr] = value
+				}
+			}
+		}
+		state.dateranges = append(state.dateranges, daterange)
 	case !state.tagDiscontinuity && strings.HasPrefix(line, "#EXT-X-DISCONTINUITY"):
 		state.tagDiscontinuity = true
 		state.listType = MEDIA

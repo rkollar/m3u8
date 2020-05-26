@@ -205,14 +205,15 @@ type MediaSegment struct {
 	SeqId           uint64
 	Title           string // optional second parameter for EXTINF tag
 	URI             string
-	Duration        float64   // first parameter for EXTINF tag; duration must be integers if protocol version is less than 3 but we are always keep them float
-	Limit           int64     // EXT-X-BYTERANGE <n> is length in bytes for the file under URI
-	Offset          int64     // EXT-X-BYTERANGE [@o] is offset from the start of the file under URI
-	Key             *Key      // EXT-X-KEY displayed before the segment and means changing of encryption key (in theory each segment may have own key)
-	Map             *Map      // EXT-X-MAP displayed before the segment
-	Discontinuity   bool      // EXT-X-DISCONTINUITY indicates an encoding discontinuity between the media segment that follows it and the one that preceded it (i.e. file format, number and type of tracks, encoding parameters, encoding sequence, timestamp sequence)
-	SCTE            *SCTE     // SCTE-35 used for Ad signaling in HLS
-	ProgramDateTime time.Time // EXT-X-PROGRAM-DATE-TIME tag associates the first sample of a media segment with an absolute date and/or time
+	Duration        float64      // first parameter for EXTINF tag; duration must be integers if protocol version is less than 3 but we are always keep them float
+	Limit           int64        // EXT-X-BYTERANGE <n> is length in bytes for the file under URI
+	Offset          int64        // EXT-X-BYTERANGE [@o] is offset from the start of the file under URI
+	Key             *Key         // EXT-X-KEY displayed before the segment and means changing of encryption key (in theory each segment may have own key)
+	Map             *Map         // EXT-X-MAP displayed before the segment
+	Discontinuity   bool         // EXT-X-DISCONTINUITY indicates an encoding discontinuity between the media segment that follows it and the one that preceded it (i.e. file format, number and type of tracks, encoding parameters, encoding sequence, timestamp sequence)
+	SCTE            *SCTE        // SCTE-35 used for Ad signaling in HLS
+	ProgramDateTime time.Time    // EXT-X-PROGRAM-DATE-TIME tag associates the first sample of a media segment with an absolute date and/or time
+	Dateranges      []*Daterange // EXT-X-DATERANGE
 	Custom          map[string]CustomTag
 }
 
@@ -224,6 +225,27 @@ type SCTE struct {
 	ID      string
 	Time    float64
 	Elapsed float64
+}
+
+// TODO
+type Daterange struct {
+	ID              string
+	Class           *string
+	StartDate       time.Time
+	EndDate         *time.Time
+	Duration        *time.Duration
+	PlannedDuration *time.Duration
+	SCTE35Command   *string
+	SCTE35In        *string
+	SCTE35Out       *string
+	EndOnNext       bool
+	X               map[string]string // X-<client-attribute> TODO
+}
+
+func NewDaterange() *Daterange {
+	return &Daterange{
+		X: make(map[string]string),
+	}
 }
 
 // This structure represents information about stream encryption.
@@ -314,6 +336,7 @@ type decodingState struct {
 	tagStreamInf       bool
 	tagInf             bool
 	tagSCTE35          bool
+	tagDaterange       bool
 	tagRange           bool
 	tagDiscontinuity   bool
 	tagProgramDateTime bool
@@ -330,5 +353,6 @@ type decodingState struct {
 	xkey               *Key
 	xmap               *Map
 	scte               *SCTE
+	dateranges         []*Daterange
 	custom             map[string]CustomTag
 }
