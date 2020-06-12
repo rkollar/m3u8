@@ -380,7 +380,9 @@ func (p *MediaPlaylist) Append(uri string, duration float64, title string) error
 // This operation does reset playlist cache.
 func (p *MediaPlaylist) AppendSegment(seg *MediaSegment) error {
 	if p.head == p.tail && p.count > 0 {
-		return ErrPlaylistFull
+		p.Segments = append(p.Segments, make([]*MediaSegment, p.Count())...)
+		p.capacity = uint(len(p.Segments))
+		p.tail = p.count
 	}
 	seg.SeqId = p.SeqNo
 	if p.count > 0 {
