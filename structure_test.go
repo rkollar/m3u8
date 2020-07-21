@@ -20,7 +20,7 @@ func CheckType(t *testing.T, p Playlist) {
 
 // Create new media playlist.
 func TestNewMediaPlaylist(t *testing.T) {
-	_, e := NewMediaPlaylist(1, 2)
+	_, e := NewMediaPlaylist(1)
 	if e != nil {
 		t.Fatalf("Create media playlist failed: %s", e)
 	}

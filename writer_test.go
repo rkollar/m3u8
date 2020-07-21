@@ -26,24 +26,13 @@ import (
 func TestInterfaceImplemented(t *testing.T) {
 	m := NewMasterPlaylist()
 	CheckType(t, m)
-	p, e := NewMediaPlaylist(1, 2)
-	if e != nil {
-		t.Fatalf("Create media playlist failed: %s", e)
-	}
+	p := NewMediaPlaylist(1)
 	CheckType(t, p)
-}
-
-// Create new media playlist with wrong size (must be failed)
-func TestCreateMediaPlaylistWithWrongSize(t *testing.T) {
-	_, e := NewMediaPlaylist(2, 1) //wrong winsize
-	if e == nil {
-		t.Fatal("Create new media playlist must be failed, but it's don't")
-	}
 }
 
 // Tests the last method on media playlist
 func TestLastSegmentMediaPlaylist(t *testing.T) {
-	p, _ := NewMediaPlaylist(5, 5)
+	p := NewMediaPlaylist(5)
 	if p.last() != 4 {
 		t.Errorf("last is %v, expected: 4", p.last())
 	}
@@ -58,10 +47,7 @@ func TestLastSegmentMediaPlaylist(t *testing.T) {
 // Create new media playlist
 // Add two segments to media playlist
 func TestAddSegmentToMediaPlaylist(t *testing.T) {
-	p, e := NewMediaPlaylist(1, 2)
-	if e != nil {
-		t.Fatalf("Create media playlist failed: %s", e)
-	}
+	p := NewMediaPlaylist(1)
 	e = p.Append("test01.ts", 10.0, "title")
 	if e != nil {
 		t.Errorf("Add 1st segment to a media playlist failed: %s", e)

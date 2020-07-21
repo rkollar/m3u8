@@ -193,10 +193,7 @@ func decode(buf *bytes.Buffer, strict bool, customDecoders []CustomDecoder) (Pla
 	wv := new(WV)
 
 	master = NewMasterPlaylist()
-	media, err = NewMediaPlaylist(8, 1024) // Winsize for VoD will become 0, capacity auto extends
-	if err != nil {
-		return nil, 0, fmt.Errorf("Create media playlist failed: %s", err)
-	}
+	media = NewMediaPlaylist(8) // Winsize for VOD will become 0
 
 	// If we have custom tags to parse
 	if customDecoders != nil {
@@ -497,21 +494,7 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 		}
 	case !strings.HasPrefix(line, "#"):
 		if state.tagInf {
-			err := p.Append(line, state.duration, state.title)
-			if err == ErrPlaylistFull {
-				// Extend playlist by doubling size, reset internal state, try again.
-				// If the second Append fails, the if err block will handle it.
-				// Retrying instead of being recursive was chosen as the state maybe
-				// modified non-idempotently.
-				p.Segments = append(p.Segments, make([]*MediaSegment, p.Count())...)
-				p.capacity = uint(len(p.Segments))
-				p.tail = p.count
-				err = p.Append(line, state.duration, state.title)
-			}
-			// Check err for first or subsequent Append()
-			if err != nil {
-				return err
-			}
+			p.Append(line, state.duration, state.title)
 			state.tagInf = false
 		}
 		if state.tagRange {
@@ -539,7 +522,7 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 				return err
 			}
 		}
-		if state.tagProgramDateTime && p.Count() > 0 {
+		if state.tagProgramDateTime && p.Segments.Len() > 0 {
 			state.tagProgramDateTime = false
 			if err = p.SetProgramDateTime(state.programDateTime); strict && err != nil {
 				return err
@@ -547,7 +530,7 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 		}
 		// If EXT-X-KEY appeared before reference to segment (EXTINF) then it linked to this segment
 		if state.tagKey {
-			p.Segments[p.last()].Key = &Key{state.xkey.Method, state.xkey.URI, state.xkey.IV, state.xkey.Keyformat, state.xkey.Keyformatversions}
+			p.last().Key = &Key{state.xkey.Method, state.xkey.URI, state.xkey.IV, state.xkey.Keyformat, state.xkey.Keyformatversions}
 			// First EXT-X-KEY may appeared in the header of the playlist and linked to first segment
 			// but for convenient playlist generation it also linked as default playlist key
 			if p.Key == nil {
@@ -557,7 +540,7 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 		}
 		// If EXT-X-MAP appeared before reference to segment (EXTINF) then it linked to this segment
 		if state.tagMap {
-			p.Segments[p.last()].Map = &Map{state.xmap.URI, state.xmap.Limit, state.xmap.Offset}
+			p.last().Map = &Map{state.xmap.URI, state.xmap.Limit, state.xmap.Offset}
 			// First EXT-X-MAP may appeared in the header of the playlist and linked to first segment
 			// but for convenient playlist generation it also linked as default playlist map
 			if p.Map == nil {
@@ -568,7 +551,7 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 
 		// if segment custom tag appeared before EXTINF then it links to this segment
 		if state.tagCustom {
-			p.Segments[p.last()].Custom = state.custom
+			p.last().Custom = state.custom
 			state.custom = make(map[string]CustomTag)
 			state.tagCustom = false
 		}
