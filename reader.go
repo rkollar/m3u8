@@ -531,12 +531,12 @@ func decodeLineOfMediaPlaylist(p *MediaPlaylist, wv *WV, state *decodingState, l
 		// If EXT-X-KEY appeared before reference to segment (EXTINF) then it linked to this segment
 		if state.tagKey {
 			p.last().Key = &Key{state.xkey.Method, state.xkey.URI, state.xkey.IV, state.xkey.Keyformat, state.xkey.Keyformatversions}
-			state.tagKey = false
+			//state.tagKey = false
 		}
 		// If EXT-X-MAP appeared before reference to segment (EXTINF) then it linked to this segment
 		if state.tagMap {
 			p.last().Map = &Map{state.xmap.URI, state.xmap.Limit, state.xmap.Offset}
-			state.tagMap = false
+			//state.tagMap = false
 		}
 
 		// if segment custom tag appeared before EXTINF then it links to this segment
