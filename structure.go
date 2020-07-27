@@ -118,9 +118,7 @@ type MediaPlaylist struct {
 	winsize          uint // max number of segments displayed in an encoded playlist; need set to zero for VOD playlists
 	buf              bytes.Buffer
 	ver              uint8
-	Key              *Key // EXT-X-KEY is optional encryption key displayed before any segments (default key for the playlist)
-	Map              *Map // EXT-X-MAP is optional tag specifies how to obtain the Media Initialization Section (default map for the playlist)
-	WV               *WV  // Widevine related tags outside of M3U8 specs
+	WV               *WV // Widevine related tags outside of M3U8 specs
 	Custom           map[string]CustomTag
 	customDecoders   []CustomDecoder
 }
@@ -264,6 +262,26 @@ type Key struct {
 	Keyformatversions string
 }
 
+func (k *Key) Equal(x *Key) bool {
+	if k.Method != x.Method {
+		return false
+	}
+	if k.URI != x.URI {
+		return false
+	}
+	if k.IV != x.IV {
+		return false
+	}
+	if k.Keyformat != x.Keyformat {
+		return false
+	}
+	if k.Keyformatversions != x.Keyformatversions {
+		return false
+	}
+
+	return true
+}
+
 // This structure represents specifies how to obtain the Media
 // Initialization Section required to parse the applicable
 // Media Segments.
@@ -277,6 +295,20 @@ type Map struct {
 	URI    string
 	Limit  int64 // <n> is length in bytes for the file under URI
 	Offset int64 // [@o] is offset from the start of the file under URI
+}
+
+func (m *Map) Equal(x *Map) bool {
+	if m.URI != x.URI {
+		return false
+	}
+	if m.Limit != x.Limit {
+		return false
+	}
+	if m.Offset != x.Offset {
+		return false
+	}
+
+	return true
 }
 
 // This structure represents metadata  for Google Widevine playlists.

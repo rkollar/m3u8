@@ -417,45 +417,6 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 		}
 	}
 
-	// default key (workaround for Widevine)
-	if p.Key != nil {
-		p.buf.WriteString("#EXT-X-KEY:")
-		p.buf.WriteString("METHOD=")
-		p.buf.WriteString(p.Key.Method)
-		if p.Key.Method != "NONE" {
-			p.buf.WriteString(",URI=\"")
-			p.buf.WriteString(p.Key.URI)
-			p.buf.WriteRune('"')
-			if p.Key.IV != "" {
-				p.buf.WriteString(",IV=")
-				p.buf.WriteString(p.Key.IV)
-			}
-			if p.Key.Keyformat != "" {
-				p.buf.WriteString(",KEYFORMAT=\"")
-				p.buf.WriteString(p.Key.Keyformat)
-				p.buf.WriteRune('"')
-			}
-			if p.Key.Keyformatversions != "" {
-				p.buf.WriteString(",KEYFORMATVERSIONS=\"")
-				p.buf.WriteString(p.Key.Keyformatversions)
-				p.buf.WriteRune('"')
-			}
-		}
-		p.buf.WriteRune('\n')
-	}
-	if p.Map != nil {
-		p.buf.WriteString("#EXT-X-MAP:")
-		p.buf.WriteString("URI=\"")
-		p.buf.WriteString(p.Map.URI)
-		p.buf.WriteRune('"')
-		if p.Map.Limit > 0 {
-			p.buf.WriteString(",BYTERANGE=")
-			p.buf.WriteString(strconv.FormatInt(p.Map.Limit, 10))
-			p.buf.WriteRune('@')
-			p.buf.WriteString(strconv.FormatInt(p.Map.Offset, 10))
-		}
-		p.buf.WriteRune('\n')
-	}
 	if p.MediaType > 0 {
 		p.buf.WriteString("#EXT-X-PLAYLIST-TYPE:")
 		switch p.MediaType {
@@ -559,6 +520,8 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 
 	var (
 		seg           *MediaSegment
+		lastMap       *Map
+		lastKey       *Key
 		durationCache = make(map[float64]string)
 	)
 
@@ -658,8 +621,8 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 			}
 			p.buf.WriteRune('\n')
 		}
-		// check for key change
-		if seg.Key != nil && p.Key != seg.Key {
+
+		if seg.Key != nil && (lastKey == nil || !seg.Key.Equal(lastKey)) {
 			p.buf.WriteString("#EXT-X-KEY:")
 			p.buf.WriteString("METHOD=")
 			p.buf.WriteString(seg.Key.Method)
@@ -684,11 +647,13 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 			}
 			p.buf.WriteRune('\n')
 		}
+		lastKey = seg.Key
+
 		if seg.Discontinuity {
 			p.buf.WriteString("#EXT-X-DISCONTINUITY\n")
 		}
-		// ignore segment Map if default playlist Map is present
-		if p.Map == nil && seg.Map != nil {
+
+		if seg.Map != nil && (lastMap == nil || !seg.Map.Equal(lastMap)) {
 			p.buf.WriteString("#EXT-X-MAP:")
 			p.buf.WriteString("URI=\"")
 			p.buf.WriteString(seg.Map.URI)
@@ -700,7 +665,10 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 				p.buf.WriteString(strconv.FormatInt(seg.Map.Offset, 10))
 			}
 			p.buf.WriteRune('\n')
+
 		}
+		lastMap = seg.Map
+
 		if !seg.ProgramDateTime.IsZero() {
 			p.buf.WriteString("#EXT-X-PROGRAM-DATE-TIME:")
 			p.buf.WriteString(seg.ProgramDateTime.Format(DATETIME))
@@ -780,28 +748,6 @@ func (p *MediaPlaylist) Close() {
 		p.buf.WriteString("#EXT-X-ENDLIST\n")
 	}
 	p.Closed = true
-}
-
-// Set encryption key appeared once in header of the playlist (pointer to MediaPlaylist.Key).
-// It useful when keys not changed during playback.
-// Set tag for the whole list.
-func (p *MediaPlaylist) SetDefaultKey(method, uri, iv, keyformat, keyformatversions string) error {
-	// A Media Playlist MUST indicate a EXT-X-VERSION of 5 or higher if it
-	// contains:
-	//   - The KEYFORMAT and KEYFORMATVERSIONS attributes of the EXT-X-KEY tag.
-	if keyformat != "" || keyformatversions != "" {
-		version(&p.ver, 5)
-	}
-	p.Key = &Key{method, uri, iv, keyformat, keyformatversions}
-
-	return nil
-}
-
-// Set default Media Initialization Section values for playlist (pointer to MediaPlaylist.Map).
-// Set EXT-X-MAP tag for the whole playlist.
-func (p *MediaPlaylist) SetDefaultMap(uri string, limit, offset int64) {
-	version(&p.ver, 5) // due section 4
-	p.Map = &Map{uri, limit, offset}
 }
 
 // Mark medialist as consists of only I-frames (Intra frames).
