@@ -220,6 +220,24 @@ type MediaSegment struct {
 	Custom          map[string]CustomTag
 }
 
+func (s *MediaSegment) Copy() *MediaSegment {
+	return &MediaSegment{
+		SeqId:           s.SeqId,
+		Title:           s.Title,
+		URI:             s.URI,
+		Duration:        s.Duration,
+		Limit:           s.Limit,
+		Offset:          s.Offset,
+		Key:             s.Key,
+		Map:             s.Map,
+		Discontinuity:   s.Discontinuity,
+		SCTE:            s.SCTE,
+		ProgramDateTime: s.ProgramDateTime,
+		Dateranges:      s.Dateranges,
+		Custom:          s.Custom,
+	}
+}
+
 // SCTE holds custom, non EXT-X-DATERANGE, SCTE-35 tags
 type SCTE struct {
 	Syntax  SCTE35Syntax  // Syntax defines the format of the SCTE-35 cue tag
