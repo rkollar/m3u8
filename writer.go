@@ -370,9 +370,9 @@ func (p *MediaPlaylist) Append(uri string, duration float64, title string) error
 // This operation does reset playlist cache.
 func (p *MediaPlaylist) AppendSegment(seg *MediaSegment) error {
 	seg.SeqId = p.SeqNo
-	//if p.count > 0 {
-	//	seg.SeqId = p.Segments[(p.capacity+p.tail-1)%p.capacity].SeqId + 1
-	//}
+	if p.Segments.Len() > 0 {
+		seg.SeqId = p.Segments.Back().Value.(*MediaSegment).SeqId + 1
+	}
 
 	p.Segments.PushBack(seg)
 	if p.TargetDuration < seg.Duration {
@@ -387,7 +387,7 @@ func (p *MediaPlaylist) AppendSegment(seg *MediaSegment) error {
 // This operation does reset cache.
 func (p *MediaPlaylist) Slide(uri string, duration float64, title string) {
 	if !p.Closed && uint(p.Segments.Len()) >= p.winsize {
-		p.Segments.Remove(p.Segments.Front())
+		p.Remove()
 	}
 	p.Append(uri, duration, title)
 }
