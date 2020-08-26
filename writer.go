@@ -588,11 +588,11 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 			}
 			if daterange.Duration != nil {
 				p.buf.WriteString(",DURATION=")
-				p.buf.WriteString(strconv.FormatFloat(daterange.Duration.Seconds(), 'f', 1, 64))
+				p.buf.WriteString(strconv.FormatFloat(daterange.Duration.Seconds(), 'f', -1, 64))
 			}
 			if daterange.PlannedDuration != nil {
 				p.buf.WriteString(",PLANNED-DURATION=")
-				p.buf.WriteString(strconv.FormatFloat(daterange.PlannedDuration.Seconds(), 'f', 1, 64))
+				p.buf.WriteString(strconv.FormatFloat(daterange.PlannedDuration.Seconds(), 'f', -1, 64))
 			}
 			for attr, value := range daterange.X {
 				p.buf.WriteString(",X-")
