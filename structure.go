@@ -116,7 +116,6 @@ type MediaPlaylist struct {
 	durationAsInt    bool // output durations as integers of floats?
 	keyformat        int
 	winsize          uint // max number of segments displayed in an encoded playlist; need set to zero for VOD playlists
-	buf              bytes.Buffer
 	ver              uint8
 	WV               *WV // Widevine related tags outside of M3U8 specs
 	Custom           map[string]CustomTag
@@ -150,7 +149,6 @@ type MasterPlaylist struct {
 	Variants            []*Variant
 	Args                string // optional arguments placed after URI (URI?Args)
 	CypherVersion       string // non-standard tag for Widevine (see also WV struct)
-	buf                 bytes.Buffer
 	ver                 uint8
 	independentSegments bool
 	Custom              map[string]CustomTag

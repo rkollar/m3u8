@@ -63,33 +63,26 @@ func (p *MasterPlaylist) Append(uri string, chunklist *MediaPlaylist, params Var
 		version(&p.ver, 4) // so it is optional and in theory may be set to ver.1
 		// but more tests required
 	}
-	p.buf.Reset()
-}
-
-func (p *MasterPlaylist) ResetCache() {
-	p.buf.Reset()
 }
 
 // Generate output in M3U8 format.
-func (p *MasterPlaylist) Encode() *bytes.Buffer {
-	if p.buf.Len() > 0 {
-		return &p.buf
-	}
+func (p *MasterPlaylist) Encode() (buf *bytes.Buffer) {
+	buf = bytes.NewBuffer(nil)
 
-	p.buf.WriteString("#EXTM3U\n#EXT-X-VERSION:")
-	p.buf.WriteString(strver(p.ver))
-	p.buf.WriteRune('\n')
+	buf.WriteString("#EXTM3U\n#EXT-X-VERSION:")
+	buf.WriteString(strver(p.ver))
+	buf.WriteRune('\n')
 
 	if p.IndependentSegments() {
-		p.buf.WriteString("#EXT-X-INDEPENDENT-SEGMENTS\n")
+		buf.WriteString("#EXT-X-INDEPENDENT-SEGMENTS\n")
 	}
 
 	// Write any custom master tags
 	if p.Custom != nil {
 		for _, v := range p.Custom {
 			if customBuf := v.Encode(); customBuf != nil {
-				p.buf.WriteString(customBuf.String())
-				p.buf.WriteRune('\n')
+				buf.WriteString(customBuf.String())
+				buf.WriteRune('\n')
 			}
 		}
 	}
@@ -106,189 +99,189 @@ func (p *MasterPlaylist) Encode() *bytes.Buffer {
 				}
 				altsWritten[altKey] = true
 
-				p.buf.WriteString("#EXT-X-MEDIA:")
+				buf.WriteString("#EXT-X-MEDIA:")
 				if alt.Type != "" {
-					p.buf.WriteString("TYPE=") // Type should not be quoted
-					p.buf.WriteString(alt.Type)
+					buf.WriteString("TYPE=") // Type should not be quoted
+					buf.WriteString(alt.Type)
 				}
 				if alt.GroupId != "" {
-					p.buf.WriteString(",GROUP-ID=\"")
-					p.buf.WriteString(alt.GroupId)
-					p.buf.WriteRune('"')
+					buf.WriteString(",GROUP-ID=\"")
+					buf.WriteString(alt.GroupId)
+					buf.WriteRune('"')
 				}
 				if alt.Name != "" {
-					p.buf.WriteString(",NAME=\"")
-					p.buf.WriteString(alt.Name)
-					p.buf.WriteRune('"')
+					buf.WriteString(",NAME=\"")
+					buf.WriteString(alt.Name)
+					buf.WriteRune('"')
 				}
-				p.buf.WriteString(",DEFAULT=")
+				buf.WriteString(",DEFAULT=")
 				if alt.Default {
-					p.buf.WriteString("YES")
+					buf.WriteString("YES")
 				} else {
-					p.buf.WriteString("NO")
+					buf.WriteString("NO")
 				}
 				if alt.Autoselect != "" {
-					p.buf.WriteString(",AUTOSELECT=")
-					p.buf.WriteString(alt.Autoselect)
+					buf.WriteString(",AUTOSELECT=")
+					buf.WriteString(alt.Autoselect)
 				}
 				if alt.Language != "" {
-					p.buf.WriteString(",LANGUAGE=\"")
-					p.buf.WriteString(alt.Language)
-					p.buf.WriteRune('"')
+					buf.WriteString(",LANGUAGE=\"")
+					buf.WriteString(alt.Language)
+					buf.WriteRune('"')
 				}
 				if alt.Forced != "" {
-					p.buf.WriteString(",FORCED=")
-					p.buf.WriteString(alt.Forced)
+					buf.WriteString(",FORCED=")
+					buf.WriteString(alt.Forced)
 				}
 				if alt.Type == "CLOSED-CAPTIONS" && alt.InstreamID != "" {
-					p.buf.WriteString(",INSTREAM-ID=\"")
-					p.buf.WriteString(alt.InstreamID)
-					p.buf.WriteRune('"')
+					buf.WriteString(",INSTREAM-ID=\"")
+					buf.WriteString(alt.InstreamID)
+					buf.WriteRune('"')
 				}
 				if alt.Characteristics != "" {
-					p.buf.WriteString(",CHARACTERISTICS=\"")
-					p.buf.WriteString(alt.Characteristics)
-					p.buf.WriteRune('"')
+					buf.WriteString(",CHARACTERISTICS=\"")
+					buf.WriteString(alt.Characteristics)
+					buf.WriteRune('"')
 				}
 				if alt.Channels != "" {
-					p.buf.WriteString(",CHANNELS=\"")
-					p.buf.WriteString(alt.Channels)
-					p.buf.WriteRune('"')
+					buf.WriteString(",CHANNELS=\"")
+					buf.WriteString(alt.Channels)
+					buf.WriteRune('"')
 				}
 				if alt.Subtitles != "" {
-					p.buf.WriteString(",SUBTITLES=\"")
-					p.buf.WriteString(alt.Subtitles)
-					p.buf.WriteRune('"')
+					buf.WriteString(",SUBTITLES=\"")
+					buf.WriteString(alt.Subtitles)
+					buf.WriteRune('"')
 				}
 				if alt.URI != "" {
-					p.buf.WriteString(",URI=\"")
-					p.buf.WriteString(alt.URI)
-					p.buf.WriteRune('"')
+					buf.WriteString(",URI=\"")
+					buf.WriteString(alt.URI)
+					buf.WriteRune('"')
 				}
-				p.buf.WriteRune('\n')
+				buf.WriteRune('\n')
 			}
 		}
 		if pl.Iframe {
-			p.buf.WriteString("#EXT-X-I-FRAME-STREAM-INF:")
+			buf.WriteString("#EXT-X-I-FRAME-STREAM-INF:")
 
-			p.buf.WriteString("BANDWIDTH=")
-			p.buf.WriteString(strconv.FormatUint(uint64(pl.Bandwidth), 10))
+			buf.WriteString("BANDWIDTH=")
+			buf.WriteString(strconv.FormatUint(uint64(pl.Bandwidth), 10))
 			if p.ver < 6 {
-				p.buf.WriteString(",PROGRAM-ID=")
-				p.buf.WriteString(strconv.FormatUint(uint64(pl.ProgramId), 10))
+				buf.WriteString(",PROGRAM-ID=")
+				buf.WriteString(strconv.FormatUint(uint64(pl.ProgramId), 10))
 			}
 			if pl.AverageBandwidth != 0 {
-				p.buf.WriteString(",AVERAGE-BANDWIDTH=")
-				p.buf.WriteString(strconv.FormatUint(uint64(pl.AverageBandwidth), 10))
+				buf.WriteString(",AVERAGE-BANDWIDTH=")
+				buf.WriteString(strconv.FormatUint(uint64(pl.AverageBandwidth), 10))
 			}
 			if pl.Codecs != "" {
-				p.buf.WriteString(",CODECS=\"")
-				p.buf.WriteString(pl.Codecs)
-				p.buf.WriteRune('"')
+				buf.WriteString(",CODECS=\"")
+				buf.WriteString(pl.Codecs)
+				buf.WriteRune('"')
 			}
 			if pl.Resolution != "" {
-				p.buf.WriteString(",RESOLUTION=") // Resolution should not be quoted
-				p.buf.WriteString(pl.Resolution)
+				buf.WriteString(",RESOLUTION=") // Resolution should not be quoted
+				buf.WriteString(pl.Resolution)
 			}
 			if pl.Video != "" {
-				p.buf.WriteString(",VIDEO=\"")
-				p.buf.WriteString(pl.Video)
-				p.buf.WriteRune('"')
+				buf.WriteString(",VIDEO=\"")
+				buf.WriteString(pl.Video)
+				buf.WriteRune('"')
 			}
 			if pl.VideoRange != "" {
-				p.buf.WriteString(",VIDEO-RANGE=")
-				p.buf.WriteString(pl.VideoRange)
+				buf.WriteString(",VIDEO-RANGE=")
+				buf.WriteString(pl.VideoRange)
 			}
 			if pl.HDCPLevel != "" {
-				p.buf.WriteString(",HDCP-LEVEL=")
-				p.buf.WriteString(pl.HDCPLevel)
+				buf.WriteString(",HDCP-LEVEL=")
+				buf.WriteString(pl.HDCPLevel)
 			}
 			if pl.URI != "" {
-				p.buf.WriteString(",URI=\"")
-				p.buf.WriteString(pl.URI)
-				p.buf.WriteRune('"')
+				buf.WriteString(",URI=\"")
+				buf.WriteString(pl.URI)
+				buf.WriteRune('"')
 			}
-			p.buf.WriteRune('\n')
+			buf.WriteRune('\n')
 		} else {
-			p.buf.WriteString("#EXT-X-STREAM-INF:")
+			buf.WriteString("#EXT-X-STREAM-INF:")
 
-			p.buf.WriteString("BANDWIDTH=")
-			p.buf.WriteString(strconv.FormatUint(uint64(pl.Bandwidth), 10))
+			buf.WriteString("BANDWIDTH=")
+			buf.WriteString(strconv.FormatUint(uint64(pl.Bandwidth), 10))
 			if p.ver < 6 {
-				p.buf.WriteString(",PROGRAM-ID=")
-				p.buf.WriteString(strconv.FormatUint(uint64(pl.ProgramId), 10))
+				buf.WriteString(",PROGRAM-ID=")
+				buf.WriteString(strconv.FormatUint(uint64(pl.ProgramId), 10))
 			}
 			if pl.AverageBandwidth != 0 {
-				p.buf.WriteString(",AVERAGE-BANDWIDTH=")
-				p.buf.WriteString(strconv.FormatUint(uint64(pl.AverageBandwidth), 10))
+				buf.WriteString(",AVERAGE-BANDWIDTH=")
+				buf.WriteString(strconv.FormatUint(uint64(pl.AverageBandwidth), 10))
 			}
 			if pl.Codecs != "" {
-				p.buf.WriteString(",CODECS=\"")
-				p.buf.WriteString(pl.Codecs)
-				p.buf.WriteRune('"')
+				buf.WriteString(",CODECS=\"")
+				buf.WriteString(pl.Codecs)
+				buf.WriteRune('"')
 			}
 			if pl.Resolution != "" {
-				p.buf.WriteString(",RESOLUTION=") // Resolution should not be quoted
-				p.buf.WriteString(pl.Resolution)
+				buf.WriteString(",RESOLUTION=") // Resolution should not be quoted
+				buf.WriteString(pl.Resolution)
 			}
 			if pl.Audio != "" {
-				p.buf.WriteString(",AUDIO=\"")
-				p.buf.WriteString(pl.Audio)
-				p.buf.WriteRune('"')
+				buf.WriteString(",AUDIO=\"")
+				buf.WriteString(pl.Audio)
+				buf.WriteRune('"')
 			}
 			if pl.Video != "" {
-				p.buf.WriteString(",VIDEO=\"")
-				p.buf.WriteString(pl.Video)
-				p.buf.WriteRune('"')
+				buf.WriteString(",VIDEO=\"")
+				buf.WriteString(pl.Video)
+				buf.WriteRune('"')
 			}
 			if pl.Captions != "" {
-				p.buf.WriteString(",CLOSED-CAPTIONS=")
+				buf.WriteString(",CLOSED-CAPTIONS=")
 				if pl.Captions == "NONE" {
-					p.buf.WriteString(pl.Captions) // CC should not be quoted when eq NONE
+					buf.WriteString(pl.Captions) // CC should not be quoted when eq NONE
 				} else {
-					p.buf.WriteRune('"')
-					p.buf.WriteString(pl.Captions)
-					p.buf.WriteRune('"')
+					buf.WriteRune('"')
+					buf.WriteString(pl.Captions)
+					buf.WriteRune('"')
 				}
 			}
 			if pl.Subtitles != "" {
-				p.buf.WriteString(",SUBTITLES=\"")
-				p.buf.WriteString(pl.Subtitles)
-				p.buf.WriteRune('"')
+				buf.WriteString(",SUBTITLES=\"")
+				buf.WriteString(pl.Subtitles)
+				buf.WriteRune('"')
 			}
 			if pl.Name != "" {
-				p.buf.WriteString(",NAME=\"")
-				p.buf.WriteString(pl.Name)
-				p.buf.WriteRune('"')
+				buf.WriteString(",NAME=\"")
+				buf.WriteString(pl.Name)
+				buf.WriteRune('"')
 			}
 			if pl.FrameRate != 0 {
-				p.buf.WriteString(",FRAME-RATE=")
-				p.buf.WriteString(strconv.FormatFloat(pl.FrameRate, 'f', 3, 64))
+				buf.WriteString(",FRAME-RATE=")
+				buf.WriteString(strconv.FormatFloat(pl.FrameRate, 'f', 3, 64))
 			}
 			if pl.VideoRange != "" {
-				p.buf.WriteString(",VIDEO-RANGE=")
-				p.buf.WriteString(pl.VideoRange)
+				buf.WriteString(",VIDEO-RANGE=")
+				buf.WriteString(pl.VideoRange)
 			}
 			if pl.HDCPLevel != "" {
-				p.buf.WriteString(",HDCP-LEVEL=")
-				p.buf.WriteString(pl.HDCPLevel)
+				buf.WriteString(",HDCP-LEVEL=")
+				buf.WriteString(pl.HDCPLevel)
 			}
 
-			p.buf.WriteRune('\n')
-			p.buf.WriteString(pl.URI)
+			buf.WriteRune('\n')
+			buf.WriteString(pl.URI)
 			if p.Args != "" {
 				if strings.Contains(pl.URI, "?") {
-					p.buf.WriteRune('&')
+					buf.WriteRune('&')
 				} else {
-					p.buf.WriteRune('?')
+					buf.WriteRune('?')
 				}
-				p.buf.WriteString(p.Args)
+				buf.WriteString(p.Args)
 			}
-			p.buf.WriteRune('\n')
+			buf.WriteRune('\n')
 		}
 	}
 
-	return &p.buf
+	return
 }
 
 // SetCustomTag sets the provided tag on the master playlist for its TagName
@@ -352,7 +345,6 @@ func (p *MediaPlaylist) Remove() (err error) {
 	if !p.Closed {
 		p.SeqNo++
 	}
-	p.buf.Reset()
 	return nil
 }
 
@@ -378,7 +370,6 @@ func (p *MediaPlaylist) AppendSegment(seg *MediaSegment) error {
 	if p.TargetDuration < seg.Duration {
 		p.TargetDuration = math.Ceil(seg.Duration)
 	}
-	p.buf.Reset()
 	return nil
 }
 
@@ -392,129 +383,122 @@ func (p *MediaPlaylist) Slide(uri string, duration float64, title string) {
 	p.Append(uri, duration, title)
 }
 
-// Reset playlist cache. Next called Encode() will regenerate playlist from the chunk slice.
-func (p *MediaPlaylist) ResetCache() {
-	p.buf.Reset()
-}
-
 // Generate output in M3U8 format. Marshal `winsize` elements from bottom of the `segments` queue.
-func (p *MediaPlaylist) Encode() *bytes.Buffer {
-	if p.buf.Len() > 0 {
-		return &p.buf
-	}
+func (p *MediaPlaylist) Encode() (buf *bytes.Buffer) {
+	buf = bytes.NewBuffer(nil)
 
-	p.buf.WriteString("#EXTM3U\n#EXT-X-VERSION:")
-	p.buf.WriteString(strver(p.ver))
-	p.buf.WriteRune('\n')
+	buf.WriteString("#EXTM3U\n#EXT-X-VERSION:")
+	buf.WriteString(strver(p.ver))
+	buf.WriteRune('\n')
 
 	// Write any custom master tags
 	if p.Custom != nil {
 		for _, v := range p.Custom {
 			if customBuf := v.Encode(); customBuf != nil {
-				p.buf.WriteString(customBuf.String())
-				p.buf.WriteRune('\n')
+				buf.WriteString(customBuf.String())
+				buf.WriteRune('\n')
 			}
 		}
 	}
 
 	if p.MediaType > 0 {
-		p.buf.WriteString("#EXT-X-PLAYLIST-TYPE:")
+		buf.WriteString("#EXT-X-PLAYLIST-TYPE:")
 		switch p.MediaType {
 		case EVENT:
-			p.buf.WriteString("EVENT\n")
-			p.buf.WriteString("#EXT-X-ALLOW-CACHE:NO\n")
+			buf.WriteString("EVENT\n")
+			buf.WriteString("#EXT-X-ALLOW-CACHE:NO\n")
 		case VOD:
-			p.buf.WriteString("VOD\n")
+			buf.WriteString("VOD\n")
 		}
 	}
-	p.buf.WriteString("#EXT-X-MEDIA-SEQUENCE:")
-	p.buf.WriteString(strconv.FormatUint(p.SeqNo, 10))
-	p.buf.WriteRune('\n')
-	p.buf.WriteString("#EXT-X-TARGETDURATION:")
-	p.buf.WriteString(strconv.FormatInt(int64(math.Ceil(p.TargetDuration)), 10)) // due section 3.4.2 of M3U8 specs EXT-X-TARGETDURATION must be integer
-	p.buf.WriteRune('\n')
+	buf.WriteString("#EXT-X-MEDIA-SEQUENCE:")
+	buf.WriteString(strconv.FormatUint(p.SeqNo, 10))
+	buf.WriteRune('\n')
+	buf.WriteString("#EXT-X-TARGETDURATION:")
+	buf.WriteString(strconv.FormatInt(int64(math.Ceil(p.TargetDuration)), 10)) // due section 3.4.2 of M3U8 specs EXT-X-TARGETDURATION must be integer
+	buf.WriteRune('\n')
 	if p.StartTime > 0.0 {
-		p.buf.WriteString("#EXT-X-START:TIME-OFFSET=")
-		p.buf.WriteString(strconv.FormatFloat(p.StartTime, 'f', -1, 64))
+		buf.WriteString("#EXT-X-START:TIME-OFFSET=")
+		buf.WriteString(strconv.FormatFloat(p.StartTime, 'f', -1, 64))
 		if p.StartTimePrecise {
-			p.buf.WriteString(",PRECISE=YES")
+			buf.WriteString(",PRECISE=YES")
 		}
-		p.buf.WriteRune('\n')
+		buf.WriteRune('\n')
 	}
 	if p.DiscontinuitySeq != 0 {
-		p.buf.WriteString("#EXT-X-DISCONTINUITY-SEQUENCE:")
-		p.buf.WriteString(strconv.FormatUint(uint64(p.DiscontinuitySeq), 10))
-		p.buf.WriteRune('\n')
+		buf.WriteString("#EXT-X-DISCONTINUITY-SEQUENCE:")
+		buf.WriteString(strconv.FormatUint(uint64(p.DiscontinuitySeq), 10))
+		buf.WriteRune('\n')
 	}
 	if p.Iframe {
-		p.buf.WriteString("#EXT-X-I-FRAMES-ONLY\n")
+		buf.WriteString("#EXT-X-I-FRAMES-ONLY\n")
 	}
 	// Widevine tags
 	if p.WV != nil {
 		if p.WV.AudioChannels != 0 {
-			p.buf.WriteString("#WV-AUDIO-CHANNELS ")
-			p.buf.WriteString(strconv.FormatUint(uint64(p.WV.AudioChannels), 10))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-AUDIO-CHANNELS ")
+			buf.WriteString(strconv.FormatUint(uint64(p.WV.AudioChannels), 10))
+			buf.WriteRune('\n')
 		}
 		if p.WV.AudioFormat != 0 {
-			p.buf.WriteString("#WV-AUDIO-FORMAT ")
-			p.buf.WriteString(strconv.FormatUint(uint64(p.WV.AudioFormat), 10))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-AUDIO-FORMAT ")
+			buf.WriteString(strconv.FormatUint(uint64(p.WV.AudioFormat), 10))
+			buf.WriteRune('\n')
 		}
 		if p.WV.AudioProfileIDC != 0 {
-			p.buf.WriteString("#WV-AUDIO-PROFILE-IDC ")
-			p.buf.WriteString(strconv.FormatUint(uint64(p.WV.AudioProfileIDC), 10))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-AUDIO-PROFILE-IDC ")
+			buf.WriteString(strconv.FormatUint(uint64(p.WV.AudioProfileIDC), 10))
+			buf.WriteRune('\n')
 		}
 		if p.WV.AudioSampleSize != 0 {
-			p.buf.WriteString("#WV-AUDIO-SAMPLE-SIZE ")
-			p.buf.WriteString(strconv.FormatUint(uint64(p.WV.AudioSampleSize), 10))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-AUDIO-SAMPLE-SIZE ")
+			buf.WriteString(strconv.FormatUint(uint64(p.WV.AudioSampleSize), 10))
+			buf.WriteRune('\n')
 		}
 		if p.WV.AudioSamplingFrequency != 0 {
-			p.buf.WriteString("#WV-AUDIO-SAMPLING-FREQUENCY ")
-			p.buf.WriteString(strconv.FormatUint(uint64(p.WV.AudioSamplingFrequency), 10))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-AUDIO-SAMPLING-FREQUENCY ")
+			buf.WriteString(strconv.FormatUint(uint64(p.WV.AudioSamplingFrequency), 10))
+			buf.WriteRune('\n')
 		}
 		if p.WV.CypherVersion != "" {
-			p.buf.WriteString("#WV-CYPHER-VERSION ")
-			p.buf.WriteString(p.WV.CypherVersion)
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-CYPHER-VERSION ")
+			buf.WriteString(p.WV.CypherVersion)
+			buf.WriteRune('\n')
 		}
 		if p.WV.ECM != "" {
-			p.buf.WriteString("#WV-ECM ")
-			p.buf.WriteString(p.WV.ECM)
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-ECM ")
+			buf.WriteString(p.WV.ECM)
+			buf.WriteRune('\n')
 		}
 		if p.WV.VideoFormat != 0 {
-			p.buf.WriteString("#WV-VIDEO-FORMAT ")
-			p.buf.WriteString(strconv.FormatUint(uint64(p.WV.VideoFormat), 10))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-VIDEO-FORMAT ")
+			buf.WriteString(strconv.FormatUint(uint64(p.WV.VideoFormat), 10))
+			buf.WriteRune('\n')
 		}
 		if p.WV.VideoFrameRate != 0 {
-			p.buf.WriteString("#WV-VIDEO-FRAME-RATE ")
-			p.buf.WriteString(strconv.FormatUint(uint64(p.WV.VideoFrameRate), 10))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-VIDEO-FRAME-RATE ")
+			buf.WriteString(strconv.FormatUint(uint64(p.WV.VideoFrameRate), 10))
+			buf.WriteRune('\n')
 		}
 		if p.WV.VideoLevelIDC != 0 {
-			p.buf.WriteString("#WV-VIDEO-LEVEL-IDC")
-			p.buf.WriteString(strconv.FormatUint(uint64(p.WV.VideoLevelIDC), 10))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-VIDEO-LEVEL-IDC")
+			buf.WriteString(strconv.FormatUint(uint64(p.WV.VideoLevelIDC), 10))
+			buf.WriteRune('\n')
 		}
 		if p.WV.VideoProfileIDC != 0 {
-			p.buf.WriteString("#WV-VIDEO-PROFILE-IDC ")
-			p.buf.WriteString(strconv.FormatUint(uint64(p.WV.VideoProfileIDC), 10))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-VIDEO-PROFILE-IDC ")
+			buf.WriteString(strconv.FormatUint(uint64(p.WV.VideoProfileIDC), 10))
+			buf.WriteRune('\n')
 		}
 		if p.WV.VideoResolution != "" {
-			p.buf.WriteString("#WV-VIDEO-RESOLUTION ")
-			p.buf.WriteString(p.WV.VideoResolution)
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-VIDEO-RESOLUTION ")
+			buf.WriteString(p.WV.VideoResolution)
+			buf.WriteRune('\n')
 		}
 		if p.WV.VideoSAR != "" {
-			p.buf.WriteString("#WV-VIDEO-SAR ")
-			p.buf.WriteString(p.WV.VideoSAR)
-			p.buf.WriteRune('\n')
+			buf.WriteString("#WV-VIDEO-SAR ")
+			buf.WriteString(p.WV.VideoSAR)
+			buf.WriteRune('\n')
 		}
 	}
 
@@ -530,171 +514,171 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 		if seg.SCTE != nil {
 			switch seg.SCTE.Syntax {
 			case SCTE35_67_2014:
-				p.buf.WriteString("#EXT-SCTE35:")
-				p.buf.WriteString("CUE=\"")
-				p.buf.WriteString(seg.SCTE.Cue)
-				p.buf.WriteRune('"')
+				buf.WriteString("#EXT-SCTE35:")
+				buf.WriteString("CUE=\"")
+				buf.WriteString(seg.SCTE.Cue)
+				buf.WriteRune('"')
 				if seg.SCTE.ID != "" {
-					p.buf.WriteString(",ID=\"")
-					p.buf.WriteString(seg.SCTE.ID)
-					p.buf.WriteRune('"')
+					buf.WriteString(",ID=\"")
+					buf.WriteString(seg.SCTE.ID)
+					buf.WriteRune('"')
 				}
 				if seg.SCTE.Time != 0 {
-					p.buf.WriteString(",TIME=")
-					p.buf.WriteString(strconv.FormatFloat(seg.SCTE.Time, 'f', -1, 64))
+					buf.WriteString(",TIME=")
+					buf.WriteString(strconv.FormatFloat(seg.SCTE.Time, 'f', -1, 64))
 				}
-				p.buf.WriteRune('\n')
+				buf.WriteRune('\n')
 			case SCTE35_OATCLS:
 				switch seg.SCTE.CueType {
 				case SCTE35Cue_Start:
-					p.buf.WriteString("#EXT-OATCLS-SCTE35:")
-					p.buf.WriteString(seg.SCTE.Cue)
-					p.buf.WriteRune('\n')
-					p.buf.WriteString("#EXT-X-CUE-OUT:")
-					p.buf.WriteString(strconv.FormatFloat(seg.SCTE.Time, 'f', -1, 64))
-					p.buf.WriteRune('\n')
+					buf.WriteString("#EXT-OATCLS-SCTE35:")
+					buf.WriteString(seg.SCTE.Cue)
+					buf.WriteRune('\n')
+					buf.WriteString("#EXT-X-CUE-OUT:")
+					buf.WriteString(strconv.FormatFloat(seg.SCTE.Time, 'f', -1, 64))
+					buf.WriteRune('\n')
 				case SCTE35Cue_Mid:
-					p.buf.WriteString("#EXT-X-CUE-OUT-CONT:")
-					p.buf.WriteString("ElapsedTime=")
-					p.buf.WriteString(strconv.FormatFloat(seg.SCTE.Elapsed, 'f', -1, 64))
-					p.buf.WriteString(",Duration=")
-					p.buf.WriteString(strconv.FormatFloat(seg.SCTE.Time, 'f', -1, 64))
-					p.buf.WriteString(",SCTE35=")
-					p.buf.WriteString(seg.SCTE.Cue)
-					p.buf.WriteRune('\n')
+					buf.WriteString("#EXT-X-CUE-OUT-CONT:")
+					buf.WriteString("ElapsedTime=")
+					buf.WriteString(strconv.FormatFloat(seg.SCTE.Elapsed, 'f', -1, 64))
+					buf.WriteString(",Duration=")
+					buf.WriteString(strconv.FormatFloat(seg.SCTE.Time, 'f', -1, 64))
+					buf.WriteString(",SCTE35=")
+					buf.WriteString(seg.SCTE.Cue)
+					buf.WriteRune('\n')
 				case SCTE35Cue_End:
-					p.buf.WriteString("#EXT-X-CUE-IN")
-					p.buf.WriteRune('\n')
+					buf.WriteString("#EXT-X-CUE-IN")
+					buf.WriteRune('\n')
 				}
 			}
 		}
 		for _, daterange := range seg.Dateranges {
-			p.buf.WriteString("#EXT-X-DATERANGE:")
-			p.buf.WriteString("ID=\"")
-			p.buf.WriteString(daterange.ID)
-			p.buf.WriteRune('"')
+			buf.WriteString("#EXT-X-DATERANGE:")
+			buf.WriteString("ID=\"")
+			buf.WriteString(daterange.ID)
+			buf.WriteRune('"')
 			if daterange.Class != nil {
-				p.buf.WriteString(",CLASS=\"")
-				p.buf.WriteString(*daterange.Class)
-				p.buf.WriteRune('"')
+				buf.WriteString(",CLASS=\"")
+				buf.WriteString(*daterange.Class)
+				buf.WriteRune('"')
 			}
-			p.buf.WriteString(",START-DATE=\"")
-			p.buf.WriteString(daterange.StartDate.Format(DATETIME))
-			p.buf.WriteRune('"')
+			buf.WriteString(",START-DATE=\"")
+			buf.WriteString(daterange.StartDate.Format(DATETIME))
+			buf.WriteRune('"')
 			if daterange.EndDate != nil {
-				p.buf.WriteString(",END-DATE=\"")
-				p.buf.WriteString(daterange.EndDate.Format(DATETIME))
-				p.buf.WriteRune('"')
+				buf.WriteString(",END-DATE=\"")
+				buf.WriteString(daterange.EndDate.Format(DATETIME))
+				buf.WriteRune('"')
 			}
 			if daterange.Duration != nil {
-				p.buf.WriteString(",DURATION=")
-				p.buf.WriteString(strconv.FormatFloat(daterange.Duration.Seconds(), 'f', -1, 64))
+				buf.WriteString(",DURATION=")
+				buf.WriteString(strconv.FormatFloat(daterange.Duration.Seconds(), 'f', -1, 64))
 			}
 			if daterange.PlannedDuration != nil {
-				p.buf.WriteString(",PLANNED-DURATION=")
-				p.buf.WriteString(strconv.FormatFloat(daterange.PlannedDuration.Seconds(), 'f', -1, 64))
+				buf.WriteString(",PLANNED-DURATION=")
+				buf.WriteString(strconv.FormatFloat(daterange.PlannedDuration.Seconds(), 'f', -1, 64))
 			}
 			for attr, value := range daterange.X {
-				p.buf.WriteString(",X-")
-				p.buf.WriteString(attr)
-				p.buf.WriteString("=\"")
-				p.buf.WriteString(value)
-				p.buf.WriteRune('"')
+				buf.WriteString(",X-")
+				buf.WriteString(attr)
+				buf.WriteString("=\"")
+				buf.WriteString(value)
+				buf.WriteRune('"')
 			}
 			if daterange.SCTE35Command != nil {
-				p.buf.WriteString(",SCTE35-CMD=\"")
-				p.buf.WriteString(*daterange.SCTE35Command)
-				p.buf.WriteRune('"')
+				buf.WriteString(",SCTE35-CMD=\"")
+				buf.WriteString(*daterange.SCTE35Command)
+				buf.WriteRune('"')
 			}
 			if daterange.SCTE35In != nil {
-				p.buf.WriteString(",SCTE35-IN=\"")
-				p.buf.WriteString(*daterange.SCTE35In)
-				p.buf.WriteRune('"')
+				buf.WriteString(",SCTE35-IN=\"")
+				buf.WriteString(*daterange.SCTE35In)
+				buf.WriteRune('"')
 			}
 			if daterange.SCTE35Out != nil {
-				p.buf.WriteString(",SCTE35-OUT=\"")
-				p.buf.WriteString(*daterange.SCTE35Out)
-				p.buf.WriteRune('"')
+				buf.WriteString(",SCTE35-OUT=\"")
+				buf.WriteString(*daterange.SCTE35Out)
+				buf.WriteRune('"')
 			}
 			if daterange.EndOnNext {
-				p.buf.WriteString(",END-ON-NEXT=YES")
+				buf.WriteString(",END-ON-NEXT=YES")
 			}
-			p.buf.WriteRune('\n')
+			buf.WriteRune('\n')
 		}
 
 		if seg.Key != nil && (lastKey == nil || !seg.Key.Equal(lastKey)) {
-			p.buf.WriteString("#EXT-X-KEY:")
-			p.buf.WriteString("METHOD=")
-			p.buf.WriteString(seg.Key.Method)
+			buf.WriteString("#EXT-X-KEY:")
+			buf.WriteString("METHOD=")
+			buf.WriteString(seg.Key.Method)
 			if seg.Key.Method != "NONE" {
-				p.buf.WriteString(",URI=\"")
-				p.buf.WriteString(seg.Key.URI)
-				p.buf.WriteRune('"')
+				buf.WriteString(",URI=\"")
+				buf.WriteString(seg.Key.URI)
+				buf.WriteRune('"')
 				if seg.Key.IV != "" {
-					p.buf.WriteString(",IV=")
-					p.buf.WriteString(seg.Key.IV)
+					buf.WriteString(",IV=")
+					buf.WriteString(seg.Key.IV)
 				}
 				if seg.Key.Keyformat != "" {
-					p.buf.WriteString(",KEYFORMAT=\"")
-					p.buf.WriteString(seg.Key.Keyformat)
-					p.buf.WriteRune('"')
+					buf.WriteString(",KEYFORMAT=\"")
+					buf.WriteString(seg.Key.Keyformat)
+					buf.WriteRune('"')
 				}
 				if seg.Key.Keyformatversions != "" {
-					p.buf.WriteString(",KEYFORMATVERSIONS=\"")
-					p.buf.WriteString(seg.Key.Keyformatversions)
-					p.buf.WriteRune('"')
+					buf.WriteString(",KEYFORMATVERSIONS=\"")
+					buf.WriteString(seg.Key.Keyformatversions)
+					buf.WriteRune('"')
 				}
 			}
-			p.buf.WriteRune('\n')
+			buf.WriteRune('\n')
 		}
 		lastKey = seg.Key
 
 		if seg.Discontinuity {
-			p.buf.WriteString("#EXT-X-DISCONTINUITY\n")
+			buf.WriteString("#EXT-X-DISCONTINUITY\n")
 		}
 
 		if seg.Map != nil && (lastMap == nil || !seg.Map.Equal(lastMap)) {
-			p.buf.WriteString("#EXT-X-MAP:")
-			p.buf.WriteString("URI=\"")
-			p.buf.WriteString(seg.Map.URI)
-			p.buf.WriteRune('"')
+			buf.WriteString("#EXT-X-MAP:")
+			buf.WriteString("URI=\"")
+			buf.WriteString(seg.Map.URI)
+			buf.WriteRune('"')
 			if seg.Map.Limit > 0 {
-				p.buf.WriteString(",BYTERANGE=")
-				p.buf.WriteString(strconv.FormatInt(seg.Map.Limit, 10))
-				p.buf.WriteRune('@')
-				p.buf.WriteString(strconv.FormatInt(seg.Map.Offset, 10))
+				buf.WriteString(",BYTERANGE=")
+				buf.WriteString(strconv.FormatInt(seg.Map.Limit, 10))
+				buf.WriteRune('@')
+				buf.WriteString(strconv.FormatInt(seg.Map.Offset, 10))
 			}
-			p.buf.WriteRune('\n')
+			buf.WriteRune('\n')
 
 		}
 		lastMap = seg.Map
 
 		if !seg.ProgramDateTime.IsZero() {
-			p.buf.WriteString("#EXT-X-PROGRAM-DATE-TIME:")
-			p.buf.WriteString(seg.ProgramDateTime.Format(DATETIME))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#EXT-X-PROGRAM-DATE-TIME:")
+			buf.WriteString(seg.ProgramDateTime.Format(DATETIME))
+			buf.WriteRune('\n')
 		}
 		if seg.Limit > 0 {
-			p.buf.WriteString("#EXT-X-BYTERANGE:")
-			p.buf.WriteString(strconv.FormatInt(seg.Limit, 10))
-			p.buf.WriteRune('@')
-			p.buf.WriteString(strconv.FormatInt(seg.Offset, 10))
-			p.buf.WriteRune('\n')
+			buf.WriteString("#EXT-X-BYTERANGE:")
+			buf.WriteString(strconv.FormatInt(seg.Limit, 10))
+			buf.WriteRune('@')
+			buf.WriteString(strconv.FormatInt(seg.Offset, 10))
+			buf.WriteRune('\n')
 		}
 
 		// Add Custom Segment Tags here
 		if seg.Custom != nil {
 			for _, v := range seg.Custom {
 				if customBuf := v.Encode(); customBuf != nil {
-					p.buf.WriteString(customBuf.String())
-					p.buf.WriteRune('\n')
+					buf.WriteString(customBuf.String())
+					buf.WriteRune('\n')
 				}
 			}
 		}
 
-		p.buf.WriteString("#EXTINF:")
+		buf.WriteString("#EXTINF:")
 		if str, ok := durationCache[seg.Duration]; ok {
-			p.buf.WriteString(str)
+			buf.WriteString(str)
 		} else {
 			if p.durationAsInt {
 				// Old Android players has problems with non integer Duration.
@@ -703,22 +687,22 @@ func (p *MediaPlaylist) Encode() *bytes.Buffer {
 				// Wowza Mediaserver and some others prefer floats.
 				durationCache[seg.Duration] = strconv.FormatFloat(seg.Duration, 'f', 3, 32)
 			}
-			p.buf.WriteString(durationCache[seg.Duration])
+			buf.WriteString(durationCache[seg.Duration])
 		}
-		p.buf.WriteRune(',')
-		p.buf.WriteString(seg.Title)
-		p.buf.WriteRune('\n')
-		p.buf.WriteString(seg.URI)
+		buf.WriteRune(',')
+		buf.WriteString(seg.Title)
+		buf.WriteRune('\n')
+		buf.WriteString(seg.URI)
 		if p.Args != "" {
-			p.buf.WriteRune('?')
-			p.buf.WriteString(p.Args)
+			buf.WriteRune('?')
+			buf.WriteString(p.Args)
 		}
-		p.buf.WriteRune('\n')
+		buf.WriteRune('\n')
 	}
 	if p.Closed {
-		p.buf.WriteString("#EXT-X-ENDLIST\n")
+		buf.WriteString("#EXT-X-ENDLIST\n")
 	}
-	return &p.buf
+	return
 }
 
 // For compatibility with Stringer interface
@@ -744,9 +728,6 @@ func (p *MediaPlaylist) Count() uint {
 
 // Close sliding playlist and make them fixed.
 func (p *MediaPlaylist) Close() {
-	if p.buf.Len() > 0 {
-		p.buf.WriteString("#EXT-X-ENDLIST\n")
-	}
 	p.Closed = true
 }
 
